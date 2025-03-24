@@ -1,10 +1,7 @@
-
-
-        
 # ---------------------------------------------------------------------------- #
 #                                                                              #
 # Module:       main.py                                                      #
-# Author:       Charles Doh                                                      #
+# Author:       Lucas, Charles, Max                                                      #
 # Created:      3/21/2025, 8:32:54 AM                                        #
 # Description:  V5 project                                                   #
 #                                                                              #
@@ -35,10 +32,12 @@ def turnDegrees(n_degrees):
     left_motor.spin_for(REVERSE, toTurn, DEGREES, 30, RPM, False)
     right_motor.spin_for(FORWARD, toTurn, DEGREES, 30, RPM, True)
 
+#!Moves n(integer) Inches forwards. 
 def moveInches(n_inches): 
     degreesToTravel = n_inches * (degreesPerInch) # 1 : 1
     degreesToRotate = degreesToTravel * 5 #5 : 1, now it is gear ratio compliant
-    left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, 100, RPM, False)
+    #terribly done parallel-command group
+    left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, 100, RPM, False) 
     right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, 100, RPM, True)
 
 def polygon(n_sides, n_length):
@@ -49,3 +48,7 @@ def polygon(n_sides, n_length):
 
 #Function calls begin again here
 polygon(4,5)
+
+
+
+        
