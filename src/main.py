@@ -26,25 +26,42 @@ brain.screen.print("Hello V5, Team 8")
 left_motor = Motor(Ports.PORT2, 18_1, True)
 right_motor = Motor(Ports.PORT1, 18_1, False)
 
+#!Turns Robot among rotational center n degrees COUNTER CLOCKWISE
 def turnDegrees(n_degrees): 
     degreesToRotatePerRobotRotation = (wheelTrack)/(wheelDiameter) #Degrees to turn per robot rotational degree.
     toTurn = degreesToRotatePerRobotRotation * n_degrees
     left_motor.spin_for(REVERSE, toTurn, DEGREES, 30, RPM, False)
     right_motor.spin_for(FORWARD, toTurn, DEGREES, 30, RPM, True)
 
-#!Moves n(integer) Inches forwards. 
-def moveInches(n_inches): 
+#!Moves n(integer) Inches forwards @ speed_rpm. 
+def moveInches(n_inches, speed_rpm): 
     degreesToTravel = n_inches * (degreesPerInch) # 1 : 1
     degreesToRotate = degreesToTravel * 5 #5 : 1, now it is gear ratio compliant
     #terribly done parallel-command group
-    left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, 100, RPM, False) 
-    right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, 100, RPM, True)
+    left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, False) 
+    right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
 
+#!Polygon function : To turn in a equilateral polygon of n_sides, with n_length per side. Breaks down
 def polygon(n_sides, n_length):
+    if n_sides <= 2 :
+        brain.screen.print("Invalid Number of sides") 
+        return
+
     degreesPerTurn = 360/n_sides
     for i in n_sides : 
-        moveInches(n_length)
+        moveInches(n_length, 50)
         turnDegrees(360/n_sides)
+#! Predefined maze solution, assuming correct orientation of the beginning 
+def solveMaze():
+    moveInches(27.5,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
+    turnDegrees(90) #Counter Clockwise
+    moveInches(14,50)
+    moveInches(11,50)
+    turnDegrees(-90) #Hopefully this works with clockwise movement 
+    moveInches(18, 50) #Might be too tight
+    turnDegrees(-90) #Clockwise
+    moveInches(14, 50) #Might be a little short 
+    return
 
 #Function calls begin again here
 polygon(4,5)
