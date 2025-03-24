@@ -1,15 +1,16 @@
 # ---------------------------------------------------------------------------- #
 #                                                                              #
-# Module:       main.py                                                      #
-# Author:       Lucas, Charles, Max                                                      #
-# Created:      3/21/2025, 8:32:54 AM                                        #
-# Description:  V5 project                                                   #
+# Module:       main.py                                                        #
+# Author:       Lucas, Charles, Max                                            #
+# Created:      3/21/2025, 8:32:54 AM                                          #
+# Description:  V5 project                                                     #
 #                                                                              #
 # ---------------------------------------------------------------------------- #
 
 # Library imports
 from vex import *
 import time
+from drivetrainController import drivetrainController
 
 # Brain should be defined by default
 brain = Brain()
@@ -22,7 +23,7 @@ degreesPerInch = 360.0 / wheelCircumference
 
 #Instantiations
 brain.screen.print("Hello V5, Team 8")
-
+# controller = drivetrainController(Controller(ControllerType.PRIMARY), brain) #experimental as hell 
 left_motor = Motor(Ports.PORT2, 18_1, True)
 right_motor = Motor(Ports.PORT1, 18_1, False)
 
@@ -53,10 +54,10 @@ def polygon(n_sides, n_length):
         turnDegrees(360/n_sides)
 #! Predefined maze solution, assuming correct orientation of the beginning 
 def solveMaze():
-    moveInches(27.5,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
+    moveInches(28,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
     turnDegrees(90) #Counter Clockwise
     moveInches(14,50)
-    moveInches(11,50)
+    moveInches(16,50) #TODO: Check this
     turnDegrees(-90) #Hopefully this works with clockwise movement 
     moveInches(18, 50) #Might be too tight
     turnDegrees(-90) #Clockwise
