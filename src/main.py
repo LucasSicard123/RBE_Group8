@@ -55,15 +55,16 @@ def polygon(n_sides, n_length):
 
 #! Predefined maze solution, assuming correct orientation of the beginning 
 def solveMaze():
-    moveInches(28,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
+    moveInches(27,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
     turnDegrees(90) #Counter Clockwise
-    moveInches(14,50)
-    moveInches(16,50) #TODO: Check this
-    turnDegrees(-90) #Hopefully this works with clockwise movement 
-    moveInches(18, 50) #Might be too tight
-    turnDegrees(-90) #Clockwise
-    moveInches(14, 50) #Might be a little short 
+    moveInches(27,50)
+    # moveInches(16,50) #TODO: Check this
+    turnDegrees(-88) #Hopefully this works with clockwise movement 
+    moveInches(15, 50) #Might be too tight
+    turnDegrees(-88) #Clockwise
+    moveInches(9, 50) #Might be a little short 
     return
 
 #Function calls begin again here
-polygon(6,5)
+# polygon(6,5)
+solveMaze()
