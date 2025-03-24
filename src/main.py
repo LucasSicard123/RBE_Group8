@@ -29,15 +29,15 @@ right_motor = Motor(Ports.PORT1, 18_1, False)
 
 #!Turns Robot among rotational center n degrees COUNTER CLOCKWISE
 def turnDegrees(n_degrees): 
-    degreesToRotatePerRobotRotation = (wheelTrack)/(wheelDiameter) #Degrees to turn per robot rotational degree.
-    toTurn = degreesToRotatePerRobotRotation * n_degrees
+    degreesToRotatePerRobotRotation = wheelTrack / wheelDiameter #Degrees to turn per robot rotational degree.
+    toTurn = degreesToRotatePerRobotRotation * n_degrees * gearRatio
     left_motor.spin_for(REVERSE, toTurn, DEGREES, 30, RPM, False)
     right_motor.spin_for(FORWARD, toTurn, DEGREES, 30, RPM, True)
 
 #!Moves n(integer) Inches forwards @ speed_rpm. 
 def moveInches(n_inches, speed_rpm): 
-    degreesToTravel = n_inches * (degreesPerInch) # 1 : 1
-    degreesToRotate = degreesToTravel * 5 #5 : 1, now it is gear ratio compliant
+    degreesToTravel = n_inches * degreesPerInch # 1 : 1
+    degreesToRotate = degreesToTravel * gearRatio #5 : 1, now it is gear ratio compliant
     #terribly done parallel-command group
     left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, False) 
     right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
@@ -49,9 +49,10 @@ def polygon(n_sides, n_length):
         return
 
     degreesPerTurn = 360/n_sides
-    for i in n_sides : 
+    for i in range(n_sides) : 
         moveInches(n_length, 50)
-        turnDegrees(360/n_sides)
+        turnDegrees(degreesPerTurn)
+
 #! Predefined maze solution, assuming correct orientation of the beginning 
 def solveMaze():
     moveInches(28,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
@@ -66,7 +67,3 @@ def solveMaze():
 
 #Function calls begin again here
 polygon(4,5)
-
-
-
-        
