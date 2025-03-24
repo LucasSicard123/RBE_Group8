@@ -10,7 +10,7 @@
 # Library imports
 from vex import *
 import time
-from drivetrainController import drivetrainController
+# from drivetrainController import drivetrainController
 
 # Brain should be defined by default
 brain = Brain()
@@ -66,4 +66,4 @@ def solveMaze():
     return
 
 #Function calls begin again here
-polygon(4,5)
+polygon(6,5)
