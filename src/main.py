@@ -14,6 +14,7 @@ import time
 
 # Brain should be defined by default
 brain = Brain()
+controller = Controller(ControllerType.PRIMARY)
 
 wheelTrack = 11 #in inches
 wheelDiameter = 4 #in inches
@@ -23,9 +24,11 @@ degreesPerInch = 360.0 / wheelCircumference
 
 #Instantiations
 brain.screen.print("Hello V5, Team 8")
-# controller = drivetrainController(Controller(ControllerType.PRIMARY), brain) #experimental as hell 
 left_motor = Motor(Ports.PORT2, 18_1, True)
 right_motor = Motor(Ports.PORT1, 18_1, False)
+rangeFinderFront = Sonar(brain.three_wire_port.g)
+rangeFinderSide = Sonar(brain.three_wire_port.a)
+#DriveTraincontroller = drivetrainController(controller, brain, left_motor, right_motor) #experimental as hell 
 
 #!Turns Robot among rotational center n degrees COUNTER CLOCKWISE
 def turnDegrees(n_degrees): 
@@ -42,29 +45,60 @@ def moveInches(n_inches, speed_rpm):
     left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, False) 
     right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
 
-#!Polygon function : To turn in a equilateral polygon of n_sides, with n_length per side. Breaks down
-def polygon(n_sides, n_length):
-    if n_sides <= 2 :
-        brain.screen.print("Invalid Number of sides") 
-        return
+def movePercent(n_percent, speed_rpm): 
+    left_motor.spin(FORWARD, n_percent, PERCENT)
+    right_motor.spin(FORWARD, n_percent, PERCENT)
 
-    degreesPerTurn = 360/n_sides
-    for i in range(n_sides) : 
-        moveInches(n_length, 50)
-        turnDegrees(degreesPerTurn)
+#Helper function, this will be used often to validate input
+def clamp(value, min_value, max_value):
+    return max(min_value, min(value, max_value))
 
-#! Predefined maze solution, assuming correct orientation of the beginning 
-def solveMaze():
-    moveInches(27,50) #Assuming the front wheel is by the starting line. This should end up a little before the wall to the left(18in one)
-    turnDegrees(90) #Counter Clockwise
-    moveInches(27,50)
-    # moveInches(16,50) #TODO: Check this
-    turnDegrees(-88) #Hopefully this works with clockwise movement 
-    moveInches(15, 50) #Might be too tight
-    turnDegrees(-88) #Clockwise
-    moveInches(9, 50) #Might be a little short 
+def rangeCheck(value, min_Value, max_value): 
+    if value >= min_Value and value <= max_value:
+        return True
+    return False
+
+#Drive function, WIP
+def drive(speed_rpm, n_direction): 
+    # n_direction = clamp(n_direction, -1, 1) #Ensure that we dont get ridiculous turn values
+    left_motor.set_velocity(speed_rpm - (n_direction),RPM )
+    right_motor.set_velocity(speed_rpm + (n_direction), RPM)
+    left_motor.spin(FORWARD)
+    right_motor.spin(FORWARD)
+    # sleep(10) #10 millisecond cooldown
+    # if controller.buttonA.pressed: 
+    #     left_motor.stop(BrakeType.BRAKE)
+    #     right_motor.stop(BrakeType.BRAKE)
     return
+
+#lab.2 function 
+def wallFollowInches(setDistanceFromwall): 
+    kP = 10
+    kI = 0
+    kD = 0
+    FeedForward = 0
+    distanceFromWall_side = rangeFinderSide.distance(DistanceUnits.IN) #Inches
+    distanceFromWall_front = rangeFinderFront.distance(DistanceUnits.IN) #Inches
+    error_front = distanceFromWall_front - 8
+    error_directional =  distanceFromWall_side - setDistanceFromwall #Actual - setpoint = negative(goes backward) when bot is too close, otherwise it goes towards the wall
+
+    if distanceFromWall_front > 8 : 
+        drive(75,-kP * error_directional) #this looks sus to me
+    else : 
+        drive(0,0) #stop first
+        turnDegrees(90) # command based completion
+    
 
 #Function calls begin again here
 # polygon(6,5)
-solveMaze()
+# solveMaze()
+wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
+wallFollowInches(11) # 11 Inches from the wall
+# brain.screen.set_cursor(1,1)
+# while True : 
+#     brain.screen.print(rangeFinderSide.distance(DistanceUnits.IN))
+#     brain.screen.set_cursor(1,1)
+#     wait(1000)
+#     brain.screen.clear_screen()
+
+

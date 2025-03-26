@@ -9,6 +9,12 @@ class drivetrainController:
         self.left_motor = left_motor
         self.right_motor = right_motor
     def drive(self): 
-        #self.left_motor.spin_with_voltage(self.VEXcontroller.get)
-        #self.right_motor.spin_with_voltage()
+        toDrive = True
+        while toDrive: 
+            #Normalized values [-1,1]
+            drive_r = self.VEXcontroller.axis3.position #rotational 
+            drive_f = self.VEXcontroller.axis2.position #speed control
+    def movePercent(self, n_percent, speed_rpm): 
+        self.left_motor.spin(FORWARD, n_percent, PERCENT)
+        self.right_motor.spin(FORWARD, n_percent, PERCENT)
         return
