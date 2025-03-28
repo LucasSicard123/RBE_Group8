@@ -37,8 +37,8 @@ rangeFinderSide = Sonar(brain.three_wire_port.a)
 def turnDegrees(n_degrees): 
     degreesToRotatePerRobotRotation = wheelTrack / wheelDiameter #Degrees to turn per robot rotational degree.
     toTurn = degreesToRotatePerRobotRotation * n_degrees * gearRatio
-    left_motor.spin_for(REVERSE, toTurn, DEGREES, 30, RPM, False)
-    right_motor.spin_for(FORWARD, toTurn, DEGREES, 30, RPM, True)
+    left_motor.spin_for(REVERSE, toTurn, DEGREES, 60, RPM, False)
+    right_motor.spin_for(FORWARD, toTurn, DEGREES, 60, RPM, True)
 
 #!Moves n(integer) Inches forwards @ speed_rpm. 
 def moveInches(n_inches, speed_rpm): 
@@ -75,50 +75,49 @@ def drive(speed_rpm, n_direction):
 
 #lab.2 function 
 def wallFollowInches(setDistanceFromwall): 
-    kP = 5.5
+    kP = 10.0 # must be float
     kI = 0
     kD = 0
     FeedForward = 0
     tolerance = 0.2
     distanceFromWall_side = rangeFinderSide.distance(DistanceUnits.IN) #Inches
     # error_front = distanceFromWall_front - 8 #Made obsolete(for now)
-    error_directional =   setDistanceFromwall - distanceFromWall_side #Actual - setpoint = negative(goes backward) when bot is too close, otherwise it goes towards the wall
+    error_directional = setDistanceFromwall - distanceFromWall_side #Actual - setpoint = negative(goes backward) when bot is too close, otherwise it goes towards the wall
     notComplete = True
     #Code for part 1: Dead reckoning (Requires a lot of 'if' conditions, and it pisses me off)
     turnCount = 0
-
-
+    timeDiff = 0
+    time.time()
+    timeStart = 0
     #Code for part 2: Inertial sensors
 
     #Use #turnwithGyroInPlace(90)
-
-
     #Dead-reckoning version as of now
     while notComplete:
-        if rangeFinderFront.distance(DistanceUnits.IN) >= 9 and turnCount == 0: 
+        if rangeFinderFront.distance(DistanceUnits.IN) >= 7 and turnCount == 0: 
             error_directional =  rangeFinderSide.distance(DistanceUnits.IN) - setDistanceFromwall #update
-            error_directional = clamp(error_directional, -2, 2) #Set a limit on how far the wall can even be, otherwise we deal with ridiculous turn values
-
-            drive(200,-kP * error_directional) #this looks sus to me
-            # brain.screen.print(error_directional)
-            # print(str(error_directional) + "\n")
-            # wait(1000)
-            # brain.screen.set_cursor(1,1)
-            # brain.screen.clear_screen()
+            error_directional = clamp(error_directional, -18, 18) #Set a limit on how far the wall can even be, otherwise we deal with ridiculous turn values
+            drive(200, -kP * error_directional) #this looks sus to me
+            timeStart = time.time()
+            print(-kP * error_directional)
         else : 
             # drive(0, 0)
-            if turnCount == 1 and rangeFinderFront.distance(DistanceUnits.IN) >= 50: #TODO: add proper values, measure distance from center point of the two trees to the closest front wall
-                error_directional =  distanceFromWall_side - setDistanceFromwall #update
-                error_directional = clamp(error_directional, -11, 50) #Same clamp as earlier
+            if (turnCount == 1) and (timeDiff <= 14): #TODO: add proper values, measure distance from center point of the two trees to the closest front wall
+                error_directional =  rangeFinderSide.distance(DistanceUnits.IN) - setDistanceFromwall #update
+                error_directional = clamp(error_directional, -18, 18) #Same clamp as earlier
                 drive(200, -kP * error_directional)
-            if turnCount >= 2: 
+                timeDiff = time.time() - timeStart #Currenttime - TimeStart
+                print(-kP * error_directional)
+            else :
+                if turnCount >= 2: 
                     stopMotors()
                     notComplete = False
-            else :
-                drive(0,0) #stop first
-                turnDegrees(90) # command based completion
-                moveInches(10, 150)
-                turnCount += 1
+                else :
+                    drive(0,0) #stop first
+                    turnDegrees(95) # command based completion
+                    if turnCount == 1:
+                        moveInches(10, 150)
+                    turnCount += 1
                 
 
 #! should be used with precision, setPoint is in Degrees(radians requires too many PI calls, and I am too lazy)
@@ -149,7 +148,7 @@ def wallFollowInches(setDistanceFromwall):
 controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
 wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
 # wallFollowInches(11) # 11 Inches from the wall
-wallFollowInches(5)
+wallFollowInches(8)
 
 
 # brain.screen.set_cursor(1,1)
