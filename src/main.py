@@ -22,6 +22,8 @@ gearRatio = 5 #5 : 1 // 60 : 12
 wheelCircumference = 3.14 * wheelDiameter
 degreesPerInch = 360.0 / wheelCircumference
 
+runArm = False
+
 #Instantiations
 brain.screen.print("Hello V5, Team 8")
 left_motor = Motor(Ports.PORT2, 18_1, True)
@@ -31,10 +33,12 @@ rangeFinderSide = Sonar(brain.three_wire_port.a)
 left_line_sensor = Line(brain.three_wire_port.e)
 right_line_sensor = Line(brain.three_wire_port.f)
 brain_inertial = Inertial(Ports.PORT19)
-# gyro = Gyro(brain.three_wire_port.c) #For later (Gyroscope)
-# inertial = Inertial(brain.three_wire_port.d) #For later (Inertial Sensor)
+arm_motor = Motor(Ports.PORT20, 18_1, False)
+_button = Bumper(brain.three_wire_port.c)
 
-# DriveTraincontroller = drivetrainController(controller, brain, left_motor, right_motor) #experimental as hell 
+def invert():
+    global runArm
+    runArm = not runArm
 
 #!Turns Robot among rotational center n degrees COUNTER CLOCKWISE
 def turnDegrees(n_degrees): 
@@ -241,23 +245,49 @@ def imuturn(n_degrees):
             left_motor.spin(FORWARD, 35, PERCENT)
             right_motor.spin(REVERSE, 35, PERCENT)
 
+def arm_move():
+    n_degrees = 70
+    kP = 0.8
+    error = n_degrees - arm_motor.position(RotationUnits.DEG)
+    while True:
+        if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
+            error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
+            print(arm_motor.position(RotationUnits.DEG))
+            error = clamp(error, -100, 100)
+            brain.screen.set_cursor(1,1)
+            brain.screen.print(arm_motor.current())
+            # print(arm_motor.current)
+            brain.screen.clear_screen()
+            if abs(error) <= 3:
+                brain.screen.print("done")
+                arm_motor.spin(FORWARD, 0, PERCENT)
+            else:
+                arm_motor.spin(FORWARD, kP*error, PERCENT)
+        
 ################################################################################
 #Function calls begin here
 # polygon(6,5)
 # solveMaze()
-controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
-wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
+# controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
+# controller.buttonB.pressed(arm_motor.stop(BrakeType.COAST))
+# wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
+arm_motor.reset_position()
+_button.pressed(invert)
+arm_move()
 # wallFollowInches(11) # 11 Inches from the wall
 #wallFollowInches(8)
 # wallFollowInches_imu(6)
-wallFollowInches_line(6)
+# wallFollowInches_line(6)
 # linefollow()
 # imuturn(-90)
 
+# _button.pressed(printstr)
 
+#-204
+#449
 # brain.screen.set_cursor(1,1)
 # while True : 
-#     brain.screen.print(rangeFinderSide.distance(DistanceUnits.IN))
+#     brain.screen.print(arm_motor.position())
 #     brain.screen.set_cursor(1,1)
 #     wait(1000)
 #     brain.screen.clear_screen()
