@@ -71,7 +71,7 @@ def clamp(value, min_value, max_value):
 def rangeCheck(value, min_Value, max_value):
     return value >= min_Value and value <= max_value
 
-#Drive function, WIP
+#Drive function
 def drive(speed_rpm, n_direction): 
     # n_direction = clamp(n_direction, -1, 1) #Ensure that we dont get ridiculous turn values
     left_motor.set_velocity(speed_rpm - (n_direction),RPM )
@@ -80,7 +80,6 @@ def drive(speed_rpm, n_direction):
     right_motor.spin(FORWARD)
     return
 
-#lab.2 function 
 def wallFollowInches(setDistanceFromwall): 
     kP = 10.0 # must be float
     kI = 0
@@ -245,24 +244,54 @@ def imuturn(n_degrees):
             left_motor.spin(FORWARD, 35, PERCENT)
             right_motor.spin(REVERSE, 35, PERCENT)
 
-def arm_move():
-    n_degrees = 70
-    kP = 0.8
-    error = n_degrees - arm_motor.position(RotationUnits.DEG)
+def arm_move(n_degrees):
+    kP = 1 #0.8
+    error = n_degrees - arm_motor.position(RotationUnits.DEG) #setpoint - actual = positive, in the ccw for the arm. 
+    # while True:
+    #     if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
+    #         error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
+    #         print(arm_motor.position(RotationUnits.DEG))
+    #         # error = clamp(error, -100, 100) Clamp might have an issue
+    #         # brain.screen.set_cursor(1,1)
+    #         brain.screen.print_at("Motor Torque = ", arm_motor.torque(), 40, 40)
+    #         brain.screen.print_at("Motor Current  = ",arm_motor.current(), 40, 90)
+    #         brain.screen.print_at("Motor Temperature = ", arm_motor.temperature(), 40, 140)
+
+    #         brain.screen.print_at("arm_motor.position = ", arm_motor.position(RotationUnits.DEG), 40, 190)
+
+    #         # brain.screen.clear_screen()
+    #         if abs(error) <= 1:
+    #             # arm_motor.spin(FORWARD, 0, DPS)
+    #             arm_motor.stop(BrakeType.HOLD) #This is the predefined PID controlled positional hold. 
+    #             break
+    #         else:
+    #             arm_motor.spin(FORWARD, kP*error, DPS)
+
     while True:
+        if _button.pressing():
+            invert() #Inverts runArm boolean
+            wait(100) #Prevent repeated calls for invert()
+            continue
+
+
         if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
             error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
             print(arm_motor.position(RotationUnits.DEG))
-            error = clamp(error, -100, 100)
-            brain.screen.set_cursor(1,1)
-            brain.screen.print(arm_motor.current())
-            # print(arm_motor.current)
-            brain.screen.clear_screen()
-            if abs(error) <= 3:
-                brain.screen.print("done")
-                arm_motor.spin(FORWARD, 0, PERCENT)
+            # error = clamp(error, -100, 100) Clamp might have an issue
+            # brain.screen.set_cursor(1,1)
+            brain.screen.print_at("Motor Torque = ", arm_motor.torque(), 40, 40)
+            brain.screen.print_at("Motor Current  = ",arm_motor.current(), 40, 90)
+            brain.screen.print_at("Motor Temperature = ", arm_motor.temperature(), 40, 140)
+
+            brain.screen.print_at("arm_motor.position = ", arm_motor.position(RotationUnits.DEG), 40, 190)
+            #arm_motor.spin(FORWARD, kP * error, DPS) #Could also use RPM, but thats just semantics
+            # brain.screen.clear_screen()
+            if abs(error) <= 1:
+                # arm_motor.spin(FORWARD, 0, DPS)
+                arm_motor.stop(BrakeType.HOLD) #This is the predefined PID controlled positional hold. We should not technically be using this
+                break
             else:
-                arm_motor.spin(FORWARD, kP*error, PERCENT)
+                arm_motor.spin(FORWARD, kP*error, DPS)
         
 ################################################################################
 #Function calls begin here
@@ -271,9 +300,10 @@ def arm_move():
 # controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
 # controller.buttonB.pressed(arm_motor.stop(BrakeType.COAST))
 # wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
-arm_motor.reset_position()
-_button.pressed(invert)
-arm_move()
+arm_motor.reset_position() #Zero the motor
+#alt
+arm_move(70)
+
 # wallFollowInches(11) # 11 Inches from the wall
 #wallFollowInches(8)
 # wallFollowInches_imu(6)
