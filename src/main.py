@@ -165,7 +165,7 @@ def wallFollowInches_imu(setDistanceFromwall):
 
 
 def wallFollowInches_line(setDistanceFromwall): 
-    kP = 13 # must be float
+    kP = 16.0 # must be float
     kI = 0
     kD = 0
     FeedForward = 0
@@ -175,24 +175,30 @@ def wallFollowInches_line(setDistanceFromwall):
     notComplete = True
     turnCount = 0
     while notComplete:
-        if turnCount == 0 and rangeFinderFront.distance(DistanceUnits.IN) >= 8: 
+        brain.screen.set_cursor(1,1)
+        brain.screen.print(rangeFinderFront.distance(DistanceUnits.IN))
+        brain.screen.set_cursor(2,1)
+        brain.screen.print(rangeFinderSide.distance(DistanceUnits.IN))
+        if turnCount == 0 and rangeFinderFront.distance(DistanceUnits.IN) >= 5: 
             error_directional = setDistanceFromwall - rangeFinderSide.distance(DistanceUnits.IN)  #update
             error_directional = clamp(error_directional, -18, 18) #Set a limit on how far the wall can even be, otherwise we deal with ridiculous turn values
             drive(150, kP * error_directional) #this looks sus to me
-        elif turnCount == 0: 
+        elif rangeFinderFront.distance(DistanceUnits.IN) < 5 and turnCount == 0: 
             drive(0,0)
             imuturn(-90)
             turnCount += 1
             linefollow(18) # command based
+            # wait(10000)
         elif turnCount == 1: 
             drive(0,0)
             imuturn(-90)
             moveInches(10, 50)
             turnCount += 1
-        else :
+        elif turnCount >= 2:
             drive(0,0) #stop first
             stopMotors() # command based completion
             notComplete = False #Completed task
+
 def linefollow(runtime):
     starttime = time.time()
     while True and time.time() - starttime < runtime:
@@ -221,32 +227,34 @@ def linefollow(runtime):
 # def imuStraight():
 #     while True: 
 #         drive(brain_inertial.)
-    return
+    # return
 def imuturn(n_degrees):
     n_degrees = brain_inertial.rotation() + n_degrees
     while True:
-        r = brain_inertial.rotation()
-        brain.screen.print(r,n_degrees)
-        brain.screen.set_cursor(1,1)
-        wait(100)
-        brain.screen.clear_screen()
-        if (n_degrees-6) <= r <= (n_degrees+6):
+        # brain.screen.set_cursor(1,1)
+        # brain.screen.print(brain_inertial.heading())
+        # wait(100)
+        if (n_degrees-9) <= brain_inertial.rotation() <= (n_degrees+9):
+            brain.screen.set_cursor(2,1)
             brain.screen.print("done")
             left_motor.spin(REVERSE, 0, PERCENT)
             right_motor.spin(FORWARD, 0, PERCENT)
             return
-        elif r > n_degrees:
-            brain.screen.print("turing left")
+        elif brain_inertial.rotation() > n_degrees:
+            # brain.screen.set_cursor(2,1)
+            # brain.screen.print("turing left")
             left_motor.spin(REVERSE, 35, PERCENT)
             right_motor.spin(FORWARD, 35, PERCENT)
-        elif r < n_degrees:
-            brain.screen.print("turing right")
+        elif brain_inertial.rotation() < n_degrees:
+            # brain.screen.set_cursor(2,1)
+            # brain.screen.print("turing right")
             left_motor.spin(FORWARD, 35, PERCENT)
             right_motor.spin(REVERSE, 35, PERCENT)
 
 def arm_move(n_degrees):
-    kP = 1 #0.8
+    kP = 1.0 #0.8
     error = n_degrees - arm_motor.position(RotationUnits.DEG) #setpoint - actual = positive, in the ccw for the arm. 
+    destination = n_degrees
     # while True:
     #     if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
     #         error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
@@ -267,23 +275,26 @@ def arm_move(n_degrees):
     #         else:
     #             arm_motor.spin(FORWARD, kP*error, DPS)
 
-    while True:
+    while not runArm:
         if _button.pressing():
             invert() #Inverts runArm boolean
-            wait(100) #Prevent repeated calls for invert()
-            continue
+            brain.screen.set_cursor(2,1)
+            brain.screen.print("PRESSED!!!! ", runArm)
+            wait(1000) #Prevent repeated calls for invert()
+            brain.screen.clear_screen()
 
-
+    while True:
         if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
-            error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
-            print(arm_motor.position(RotationUnits.DEG))
+            error = destination - arm_motor.position(RotationUnits.DEG) #update
             # error = clamp(error, -100, 100) Clamp might have an issue
-            # brain.screen.set_cursor(1,1)
-            brain.screen.print_at("Motor Torque = ", arm_motor.torque(), 40, 40)
-            brain.screen.print_at("Motor Current  = ",arm_motor.current(), 40, 90)
-            brain.screen.print_at("Motor Temperature = ", arm_motor.temperature(), 40, 140)
-
-            brain.screen.print_at("arm_motor.position = ", arm_motor.position(RotationUnits.DEG), 40, 190)
+            brain.screen.set_cursor(1,1)
+            brain.screen.print("Motor Torque = ", arm_motor.torque())
+            brain.screen.set_cursor(3,1)
+            brain.screen.print("Motor Current  = ",arm_motor.current())
+            brain.screen.set_cursor(5,1)
+            brain.screen.print("Motor Temperature = ", arm_motor.temperature())
+            brain.screen.set_cursor(7,1)
+            brain.screen.print("arm_motor.position = ", arm_motor.position(RotationUnits.DEG))
             #arm_motor.spin(FORWARD, kP * error, DPS) #Could also use RPM, but thats just semantics
             # brain.screen.clear_screen()
             if abs(error) <= 1:
@@ -292,6 +303,18 @@ def arm_move(n_degrees):
                 break
             else:
                 arm_motor.spin(FORWARD, kP*error, DPS)
+
+            if _button.pressing():
+                invert() #Inverts runArm boolean
+                brain.screen.set_cursor(2,1)
+                brain.screen.print("PRESSED!!!! ", runArm)
+                wait(1000) #Prevent repeated calls for invert()
+                brain.screen.clear_screen()
+        else:
+            destination = 0
+            invert()
+
+       
         
 ################################################################################
 #Function calls begin here
@@ -299,10 +322,13 @@ def arm_move(n_degrees):
 # solveMaze()
 # controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
 # controller.buttonB.pressed(arm_motor.stop(BrakeType.COAST))
-# wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
+brain_inertial.reset_rotation()
+
+wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
 arm_motor.reset_position() #Zero the motor
 #alt
-arm_move(70)
+arm_move(90)
+
 
 # wallFollowInches(11) # 11 Inches from the wall
 #wallFollowInches(8)
