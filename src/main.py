@@ -16,12 +16,13 @@ import time
 brain = Brain()
 controller = Controller(ControllerType.PRIMARY)
 
+
 wheelTrack = 11 #in inches
 wheelDiameter = 4 #in inches
 gearRatio = 5 #5 : 1 // 60 : 12
 wheelCircumference = 3.14 * wheelDiameter
 degreesPerInch = 360.0 / wheelCircumference
-
+ai_vision_12__Orange = Colordesc(1, 240, 82, 84, 10, 0.2)
 runArm = False
 
 #Instantiations
@@ -35,6 +36,34 @@ right_line_sensor = Line(brain.three_wire_port.f)
 brain_inertial = Inertial(Ports.PORT19)
 arm_motor = Motor(Ports.PORT20, 18_1, False)
 _button = Bumper(brain.three_wire_port.c)
+ai_vision_12 = AiVision(Ports.PORT12, ai_vision_12__Orange)
+
+
+#########################################
+#Vision Block
+#########################################
+def DetectObject():
+# takes a snapshot and searches for SIG_3_RED_BALL
+# you’ll want to use the signature that you defined above
+    objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+# print the coordinates of the center of the object
+    if (objects):
+        print('x:', ai_vision_12.largest_object().centerX, ' y:',
+        ai_vision_12.largest_object().centerY, ' width:',
+        ai_vision_12.largest_object().width)
+        brain.screen.print_at('x: ', ai_vision_12.largest_object().centerX, x = 50, y =
+        40)
+        brain.screen.print_at(' y:', ai_vision_12.largest_object().centerY, x = 150,
+        y = 40)
+        brain.screen.print_at(' width:', ai_vision_12.largest_object().width, x = 250,
+        y = 40)
+        
+        wait(90)
+        brain.screen.clear_screen()
+
+
+
+############################################
 
 def invert():
     global runArm
@@ -186,39 +215,49 @@ def wallFollowInches_line(setDistanceFromwall):
         elif rangeFinderFront.distance(DistanceUnits.IN) < 5 and turnCount == 0: 
             drive(0,0)
             imuturn(-90)
+            wait(2000)
             turnCount += 1
-            linefollow(18) # command based
+            linefollow(100, 18, 40) # command based
             # wait(10000)
         elif turnCount == 1: 
             drive(0,0)
             imuturn(-90)
-            moveInches(10, 50)
             turnCount += 1
         elif turnCount >= 2:
             drive(0,0) #stop first
+            moveInches(15, 100)
             stopMotors() # command based completion
             notComplete = False #Completed task
 
-def linefollow(runtime):
+def linefollow(speed, runtime, distance):
     starttime = time.time()
-    while True and time.time() - starttime < runtime:
+    run = True
+    while run:
+        if time.time() - starttime >= runtime:
+            wait(1000) 
+            if rangeFinderFront.distance(DistanceUnits.IN) <= distance:
+                run = False
         lv = left_line_sensor.reflectivity()
         rv = right_line_sensor.reflectivity()
         # brain.screen.print("left:",left_line_sensor.reflectivity(),"right:",right_line_sensor.reflectivity())
         # brain.screen.set_cursor(1,1)
         # wait(100)
         # brain.screen.clear_screen()
+        if speed < 0: 
+            temp = lv 
+            lv = rv
+            rv = temp
         kp = 1.7
         if lv < 50 and rv < 50:
-            drive(100,0)
+            drive(speed,0)
             brain.screen.clear_screen()
             brain.screen.print("going forward","left:",left_line_sensor.reflectivity(),"right:",right_line_sensor.reflectivity())
         elif rv < 50:
-            drive(100,(rv*kp))
+            drive(speed,(rv*kp))
             brain.screen.clear_screen()
             brain.screen.print("turing left","left:",left_line_sensor.reflectivity(),"right:",right_line_sensor.reflectivity())
         elif lv < 50:
-            drive(100,-(lv*kp))
+            drive(speed,-(lv*kp))
             brain.screen.clear_screen()
             brain.screen.print("turing right","left:",left_line_sensor.reflectivity(),"right:",right_line_sensor.reflectivity())
     return True
@@ -322,12 +361,12 @@ def arm_move(n_degrees):
 # solveMaze()
 # controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
 # controller.buttonB.pressed(arm_motor.stop(BrakeType.COAST))
-brain_inertial.reset_rotation()
+# brain_inertial.reset_rotation()
 
 wait(2000) # Wait time for the Sonar to catch up, and actually gives read values
-arm_motor.reset_position() #Zero the motor
-#alt
-arm_move(90)
+# arm_motor.reset_position() #Zero the motor
+# #alt
+# arm_move(90)
 
 
 # wallFollowInches(11) # 11 Inches from the wall
@@ -336,6 +375,10 @@ arm_move(90)
 # wallFollowInches_line(6)
 # linefollow()
 # imuturn(-90)
+
+while(True):
+    DetectObject()
+    wait(10)
 
 # _button.pressed(printstr)
 
