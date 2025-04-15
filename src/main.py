@@ -22,7 +22,8 @@ wheelDiameter = 4 #in inches
 gearRatio = 5 #5 : 1 // 60 : 12
 wheelCircumference = 3.14 * wheelDiameter
 degreesPerInch = 360.0 / wheelCircumference
-ai_vision_12__Orange = Colordesc(1, 240, 70, 64, 10, 0.2)
+# ai_vision_12__Orange = Colordesc(1, 240, 70, 64, 10, 0.2)
+ai_vision_12__Green = Colordesc(1, 9, 129, 55, 15, 0.4)
 runArm = False
 
 #Instantiations
@@ -36,7 +37,7 @@ right_line_sensor = Line(brain.three_wire_port.f)
 brain_inertial = Inertial(Ports.PORT19)
 arm_motor = Motor(Ports.PORT20, 18_1, False)
 _button = Bumper(brain.three_wire_port.c)
-ai_vision_12 = AiVision(Ports.PORT20, ai_vision_12__Orange)
+ai_vision_12 = AiVision(Ports.PORT20, ai_vision_12__Green)
 
 
 #########################################
@@ -45,7 +46,7 @@ ai_vision_12 = AiVision(Ports.PORT20, ai_vision_12__Orange)
 # def DetectObject():
 # # takes a snapshot and searches for SIG_3_RED_BALL
 # # you’ll want to use the signature that you defined above
-#     objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+#     objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
 # # print the coordinates of the center of the object
 #     if (objects):
 #         print('x:', ai_vision_12.largest_object().centerX, ' y:',
@@ -338,7 +339,7 @@ def arm_move(n_degrees):
 def DetectObject():
     # takes a snapshot and searches for SIG_3_RED_BALL
     # you’ll want to use the signature that you defined above
-    objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+    objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
     # print the coordinates of the center of the object
     if (objects):
         print('x:', ai_vision_12.largest_object().centerX, ' y:',
@@ -351,12 +352,12 @@ def DetectObject():
         brain.screen.clear_screen()
 
 def turntoObj():
-    objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+    objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
     kP = 0.3
     # print the coordinates of the center of the object
     while True:
         wait(90)
-        objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+        objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
         # error = 160 - ai_vision_12.largest_object().centerX
         # print(error)
         if (objects):
@@ -378,7 +379,7 @@ def turntoObj():
             #     right_motor.spin(FORWARD, kP * error, PERCENT)
 
 def drivetoObj():
-    objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+    objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
     kP = 8.76
     kPdrive = 0.4
     brain.screen.clear_screen()
@@ -387,7 +388,7 @@ def drivetoObj():
     # print the coordinates of the center of the object
     while True:
         wait(10)
-        objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+        objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
         # error = 160 - ai_vision_12.largest_object().centerX
         # print(error)
         if (objects[0].exists):
@@ -400,7 +401,6 @@ def drivetoObj():
                 if rangeCheck(turn, -0.1, 0.1): 
                     left_motor.spin(FORWARD, kP * turn, PERCENT)
                     right_motor.spin(REVERSE, kP * turn, PERCENT)
-
                 # else:
                 stopMotors()
             elif dist < 0:
@@ -431,7 +431,7 @@ def followObj():
     # print the coordinates of the center of the object
     while True:
         wait(90)
-        objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+        objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
         # error = 160 - ai_vision_12.largest_object().centerX
         # print(error)
         if (objects):
