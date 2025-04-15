@@ -42,24 +42,24 @@ ai_vision_12 = AiVision(Ports.PORT20, ai_vision_12__Orange)
 #########################################
 #Vision Block
 #########################################
-def DetectObject():
-# takes a snapshot and searches for SIG_3_RED_BALL
-# you’ll want to use the signature that you defined above
-    objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
-# print the coordinates of the center of the object
-    if (objects):
-        print('x:', ai_vision_12.largest_object().centerX, ' y:',
-        ai_vision_12.largest_object().centerY, ' width:',
-        ai_vision_12.largest_object().width)
-        brain.screen.print_at('x: ', ai_vision_12.largest_object().centerX, x = 50, y =
-        40)
-        brain.screen.print_at(' y:', ai_vision_12.largest_object().centerY, x = 150,
-        y = 40)
-        brain.screen.print_at(' width:', ai_vision_12.largest_object().width, x = 250,
-        y = 40)
+# def DetectObject():
+# # takes a snapshot and searches for SIG_3_RED_BALL
+# # you’ll want to use the signature that you defined above
+#     objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
+# # print the coordinates of the center of the object
+#     if (objects):
+#         print('x:', ai_vision_12.largest_object().centerX, ' y:',
+#         ai_vision_12.largest_object().centerY, ' width:',
+#         ai_vision_12.largest_object().width)
+#         brain.screen.print_at('x: ', ai_vision_12.largest_object().centerX, x = 50, y =
+#         40)
+#         brain.screen.print_at(' y:', ai_vision_12.largest_object().centerY, x = 150,
+#         y = 40)
+#         brain.screen.print_at(' width:', ai_vision_12.largest_object().width, x = 250,
+#         y = 40)
         
-        wait(90)
-        brain.screen.clear_screen()
+#         wait(90)
+#         brain.screen.clear_screen()
 
 
 
@@ -103,8 +103,8 @@ def rangeCheck(value, min_Value, max_value):
 #Drive function
 def drive(speed_rpm, n_direction): 
     # n_direction = clamp(n_direction, -1, 1) #Ensure that we dont get ridiculous turn values
-    left_motor.set_velocity(speed_rpm - (n_direction),RPM )
-    right_motor.set_velocity(speed_rpm + (n_direction), RPM)
+    left_motor.set_velocity(speed_rpm - (n_direction * speed_rpm),RPM )
+    right_motor.set_velocity(speed_rpm + (n_direction * speed_rpm), RPM)
     left_motor.spin(FORWARD)
     right_motor.spin(FORWARD)
     return
@@ -153,6 +153,7 @@ def wallFollowInches(setDistanceFromwall):
                     if turnCount == 1:
                         moveInches(10, 150)
                     turnCount += 1
+
 def wallFollowInches_imu(setDistanceFromwall): 
     kP = 13 # must be float
     kI = 0
@@ -294,25 +295,6 @@ def arm_move(n_degrees):
     kP = 1.0 #0.8
     error = n_degrees - arm_motor.position(RotationUnits.DEG) #setpoint - actual = positive, in the ccw for the arm. 
     destination = n_degrees
-    # while True:
-    #     if runArm and rangeCheck(arm_motor.position(RotationUnits.DEG), -100, 200):  
-    #         error = n_degrees - arm_motor.position(RotationUnits.DEG) #update
-    #         print(arm_motor.position(RotationUnits.DEG))
-    #         # error = clamp(error, -100, 100) Clamp might have an issue
-    #         # brain.screen.set_cursor(1,1)
-    #         brain.screen.print_at("Motor Torque = ", arm_motor.torque(), 40, 40)
-    #         brain.screen.print_at("Motor Current  = ",arm_motor.current(), 40, 90)
-    #         brain.screen.print_at("Motor Temperature = ", arm_motor.temperature(), 40, 140)
-
-    #         brain.screen.print_at("arm_motor.position = ", arm_motor.position(RotationUnits.DEG), 40, 190)
-
-    #         # brain.screen.clear_screen()
-    #         if abs(error) <= 1:
-    #             # arm_motor.spin(FORWARD, 0, DPS)
-    #             arm_motor.stop(BrakeType.HOLD) #This is the predefined PID controlled positional hold. 
-    #             break
-    #         else:
-    #             arm_motor.spin(FORWARD, kP*error, DPS)
 
     while not runArm:
         if _button.pressing():
@@ -352,6 +334,7 @@ def arm_move(n_degrees):
         else:
             destination = 0
             invert()
+
 def DetectObject():
     # takes a snapshot and searches for SIG_3_RED_BALL
     # you’ll want to use the signature that you defined above
@@ -368,7 +351,6 @@ def DetectObject():
         brain.screen.clear_screen()
 
 def turntoObj():
-
     objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
     kP = 0.3
     # print the coordinates of the center of the object
@@ -394,33 +376,56 @@ def turntoObj():
             #     # right_motor.spin(REVERSE, kP * error, PERCENT)
             #     left_motor.spin(REVERSE, kP * error, PERCENT)
             #     right_motor.spin(FORWARD, kP * error, PERCENT)
-def drivetoObj():
 
+def drivetoObj():
     objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
-    kP = 0.3
+    kP = 8.76
+    kPdrive = 0.4
+    brain.screen.clear_screen()
+    widthReq = 120
+    tolerance = 2
     # print the coordinates of the center of the object
     while True:
-        wait(90)
+        wait(10)
         objects = ai_vision_12.take_snapshot(ai_vision_12__Orange)
         # error = 160 - ai_vision_12.largest_object().centerX
         # print(error)
-        if (objects):
+        if (objects[0].exists):
             width = ai_vision_12.largest_object().width
-            print(width)
-            if rangeCheck(width, 50, 20):
+            brain.screen.set_cursor(1,1)
+            brain.screen.print(width)
+            dist = widthReq - width
+            turn = (ai_vision_12.largest_object().centerX - 160) / 160
+            if rangeCheck(width, widthReq - tolerance, widthReq + tolerance,):
+                if rangeCheck(turn, -0.1, 0.1): 
+                    left_motor.spin(FORWARD, kP * turn, PERCENT)
+                    right_motor.spin(REVERSE, kP * turn, PERCENT)
+
+                # else:
                 stopMotors()
-            elif width > 25:
-                    # brain.screen.set_cursor(2,1)
-                    # brain.screen.print("turing left")
-                left_motor.spin(REVERSE, 10, PERCENT)
-                right_motor.spin(REVERSE, 10, PERCENT)
-            elif width < 45:
-                    # brain.screen.set_cursor(2,1)
-                    # brain.screen.print("turing right")
-                # left_motor.spin(FORWARD, kP * error, PERCENT)
-                # right_motor.spin(REVERSE, kP * error, PERCENT)
-                left_motor.spin(FORWARD, 10, PERCENT)
-                right_motor.spin(FORWARD, 10, PERCENT)      
+            elif dist < 0:
+                drive(dist * kPdrive, turn)
+            elif dist > 0:
+                drive(dist * kPdrive, -turn)
+
+                
+                # drive(dist * someSpeed, turn)
+            # elif width > 35:
+            #         # brain.screen.set_cursor(2,1)
+            #         # brain.screen.print("turing left")
+            #     left_motor.spin(REVERSE, 10, PERCENT)
+            #     right_motor.spin(REVERSE, 10, PERCENT)
+            # elif width < 25:
+            #         # brain.screen.set_cursor(2,1)
+            #         # brain.screen.print("turing right")
+            #     # left_motor.spin(FORWARD, kP * error, PERCENT)
+            #     # right_motor.spin(REVERSE, kP * error, PERCENT)
+            #     left_motor.spin(FORWARD, 10, PERCENT)
+            #     right_motor.spin(FORWARD, 10, PERCENT)
+        else:
+            left_motor.stop()
+            right_motor.stop()
+ 
 def followObj():
     kP = 0.3
     # print the coordinates of the center of the object
@@ -463,7 +468,6 @@ def followObj():
                 right_motor.spin(FORWARD, 10, PERCENT)      
             
 
-turntoObj()
 
 
 
@@ -475,7 +479,9 @@ turntoObj()
 # solveMaze()
 # controller.buttonA.pressed(stopMotors) #Predefine a easy to press E-stop just in case. 
 # controller.buttonB.pressed(arm_motor.stop(BrakeType.COAST))
-# brain_inertial.reset_rotation()
+brain_inertial.reset_rotation()
+wait(100)
+drivetoObj()
 # Wait time for the Sonar to catch up, and actually gives read values
 # arm_motor.reset_position() #Zero the motor
 # #alt
