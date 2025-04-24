@@ -1,12 +1,13 @@
 from vex import *
 import math
 from Auxilary import Auxilary
+from Auxilary import PIDController
 
-class Mechanisms: 
+class Lift: 
     def __init__(self, left_lift_motor, right_lift_motor):
         self.left_motor = left_lift_motor
         self.right_motor = right_lift_motor
-
+        self.PID = PIDController(1, 0, 0, 0) #Initialize with a setpoint of 0
 
     def lift(self, height):
         kP = 1
@@ -24,12 +25,28 @@ class Mechanisms:
             error = height - currHeight #When positive, motors should move clockwise(forwards)[it is inverted for one of the two motors]
             #Otherwise, the current height is greater than setpoint height, hence the error is negative, in this case the pinions should move backwards.
             #TODO: Make sure this happens and resolve any inversion issues.
+            self.PID.setpoint = height
+            pidOutput = self.PID.compute(currHeight, 0.1) #Vex motors calculate every 10ms, this is simply for 
+            print(pidOutput)
             if Auxilary.rangeCheck(currHeight, height - tolerance, height + tolerance): 
                 self.left_motor.stop(BrakeType.BRAKE)
                 self.right_motor.stop(BrakeType.BRAKE)
             else: 
                 self.left_motor.spin(FORWARD, kP * error, PERCENT)
+                # self.left_motor.spin(FORWARD, pidOutput, PERCENT)
                 self.right_motor.spin(FORWARD, kP * error, PERCENT)
+                # self.right_motor.spin(FORWARD, pidOutput, PERCENT)
+
+class Arm:
+    highLimit = 80#TODO: Change
+    lowLimit = 0 #TODO: Change
+    def __init__(self, pinchMotor):
+        self.pinchMotor = pinchMotor
+    
+    def actuate(self):
+
+        return  
+
 
     
 

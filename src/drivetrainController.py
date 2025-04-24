@@ -3,7 +3,7 @@ import time
 from Auxilary import Auxilary
 
 
-class drivetrainController:
+class DrivetrainController:
 
     def __init__(self, VEXcontroller, brain, left_motor, right_motor, imu):
         self.VEXcontroller = VEXcontroller

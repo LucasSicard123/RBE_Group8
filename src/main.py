@@ -10,8 +10,10 @@
 # Library imports
 from vex import *
 import time
-from drivetrainController import drivetrainController
+from drivetrainController import DrivetrainController
 from Auxilary import Auxilary
+from Mechanisms import Lift
+from Mechanisms import Arm
 
 # Brain should be defined by default
 brain = Brain()
@@ -37,6 +39,7 @@ right_motor = Motor(Ports.PORT1, 18_1, False)
 left_lift_motor = Motor(Ports.PORT3, 18_1, True)
 right_lift_motor = Motor(Ports.PORT4, 18_1, False)
 
+arm_motor = Motor(Ports.PORT5, 18_1, True) # This might change to a servo later. 
 
 # rangeFinderFront = Sonar(brain.three_wire_port.g)
 # rangeFinderSide = Sonar(brain.three_wire_port.a)
@@ -47,7 +50,11 @@ brain_inertial = Inertial(Ports.PORT19)
 # _button = Bumper(brain.three_wire_port.c)
 ai_vision_12 = AiVision(Ports.PORT20, ai_vision_12__Green)
 
-drivetrain = drivetrainController(controller, brain, left_motor, right_motor, brain_inertial)
+drivetrain = DrivetrainController(controller, brain, left_motor, right_motor, brain_inertial)
+
+lift = Lift(left_lift_motor, right_lift_motor)
+
+arm = Arm(arm_motor)
 
 # left_motor.position(RotationUnits.DEG)
 # left_motor.reset_position()
