@@ -169,19 +169,20 @@ def moveInches(n_inches, speed_rpm):
     right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
 
 def climbRamp(): 
-        kP = 1
+        kP = 1/25
         print(brain_inertial.orientation(OrientationType.PITCH))
         while True: 
-             print(brain_inertial.orientation(OrientationType.PITCH))
-            # if Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), 0, 0):
-            #     stopMotors()
-            #     print("reached top")
-            #     break
-            # else: 
-            #     yawError = brain_inertial.heading() - 0
-            #     #Check inversions, it all hinges on whether or not the gyroscope is Clockwise positive or CCW positive. 
-            #     left_motor.spin(FORWARD, 25 - yawError * kP, RPM)
-            #     right_motor.spin(FORWARD, 25 + yawError * kP, RPM)
+            #  print(brain_inertial.orientation(OrientationType.PITCH))
+            if Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1):
+                stopMotors()
+                print("reached top")
+                break
+            else: 
+                yawError = brain_inertial.heading() - 0
+                print(yawError)
+                #Check inversions, it all hinges on whether or not the gyroscope is Clockwise positive or CCW positive. 
+                left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
+                right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
 
 
 # def movePercent(n_percent, speed_rpm): 
@@ -389,15 +390,16 @@ def approachFruit(drivetrain, lift, speed_RPM):
 
 
 
-def Autodrive(driveTrain, lift, arm):
+def Autodrive():
         finished = False
         while not finished:
+            moveInches(10, 80)
             climbRamp() #Climb the ramp and then stop
             wait(1000) # wait 1 second. 
-            driveTrain.imuTurnFieldRelative(90)
-            driveTrain.moveInches(15, 80)
-            driveTrain.imuTurnFieldRelative(0)
-            driveTrain.moveInches(2, 40)
+            imuTurnFieldRelative(90)
+            moveInches(15, 80)
+            imuTurnFieldRelative(0)
+            moveInches(2, 40)
 
             print("Ready to spot fruits")
 
@@ -443,15 +445,6 @@ print("calibration finished")
 # lift(12) #lift two inches
 # driveTeleOp()
 wait(2000)
-climbRamp()
+# climbRamp()
 print("Commands finished")
-# Autodrive(drivetrain, lift, arm)
-
-
-
-
-# drivetoObj()
-# Wait time for the Sonar to catch up, and actually gives read values
-# arm_motor.reset_position() #Zero the motor
-# #alt
-# arm_move(90)
+Autodrive()
