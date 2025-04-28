@@ -9,7 +9,6 @@
 
 # Library imports
 from vex import *
-import time
 # from drivetrainController import DrivetrainController
 # from Auxilary import Auxilary, PIDController
 # from Mechanisms import Lift
@@ -17,55 +16,30 @@ import time
 
 import math 
 
-class DrivetrainController:
+#TODO: Math seems find but might be wrong. tbd
+#Should work in theory, just not tested yet. 
+def moveRPM(self, n_RPM, n_percentDirection): 
+    self.left_motor.spin(FORWARD, Auxilary.clamp(n_RPM - n_percentDirection * 2 * n_RPM, -100, 100), RPM)
+    self.right_motor.spin(FORWARD, Auxilary.clamp(n_RPM + n_percentDirection * 2 * n_RPM, -100, 100), RPM)
+    return
 
-    # colorStack.put(Colordesc()) #yellow 
 
-    def __init__(self, VEXcontroller, brain, left_motor, right_motor, imu):
-        self.VEXcontroller = VEXcontroller
-        self.brain = brain
-        self.left_motor = left_motor
-        self.right_motor = right_motor
-        self.inertial = imu
-    #TODO: Math seems find but might be wrong. tbd
-    #Should work in theory, just not tested yet. 
-    def moveRPM(self, n_RPM, n_percentDirection): 
-        self.left_motor.spin(FORWARD, Auxilary.clamp(n_RPM - n_percentDirection * 2 * n_RPM, -100, 100), RPM)
-        self.right_motor.spin(FORWARD, Auxilary.clamp(n_RPM + n_percentDirection * 2 * n_RPM, -100, 100), RPM)
-        return
-    
-    #Command based function, will have to finish before anything else happens to the motors. 
-    def moveInches(self, n_inches, speed_rpm): 
-        degreesToTravel = n_inches * degreesPerInch # 1 : 1
-        degreesToRotate = degreesToTravel #1 : 1, now it is gear ratio compliant
-        #terribly done parallel-command group
-        self.left_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, False) 
-        self.right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
-
-    
-    #Command based method, that runs through first before letting any other command or function get called. 
-    def imuTurnFieldRelative(self, n_heading):
+#Command based method, that runs through first before letting any other command or function get called. 
+def imuTurnFieldRelative(self, n_heading):
+    heading = self.inertial.heading()
+    toTurn = True
+    tolerance = 3 #TODO: Change for later, after testing. 
+    while toTurn: 
         heading = self.inertial.heading()
-        toTurn = True
-        tolerance = 3 #TODO: Change for later, after testing. 
-        while toTurn: 
-            heading = self.inertial.heading()
-            if Auxilary.rangeCheck(heading, n_heading - 3, n_heading + 3): 
-                self.stopMotors()
-                toTurn = False #End function
-            if heading < n_heading: 
-                self.moveRPM(35, 1)
-            if heading > n_heading: 
-                self.moveRPM(35, -1)
-
-    
-
-    def stopMotors(self):
-        self.left_motor.stop(BrakeType.BRAKE)
-        self.right_motor.stop(BrakeType.BRAKE)
+        if Auxilary.rangeCheck(heading, n_heading - 3, n_heading + 3): 
+            self.stopMotors()
+            toTurn = False #End function
+        if heading < n_heading: 
+            self.moveRPM(35, 1)
+        if heading > n_heading: 
+            self.moveRPM(35, -1)
 
 class Auxilary:
-
     def __init__(self):
         return
     @staticmethod
@@ -106,15 +80,6 @@ class PIDController:
         self.previous_error = error
         
         return output
-
-class Lift: 
-    pitchDiameter = 0.5 #In inches
-    pitchCircumference = pitchDiameter * math.pi
-    def __init__(self, left_lift_motor):
-        self.left_motor = left_lift_motor
-        self.PID = PIDController(1, 0, 0, 0) #Initialize with a setpoint of 0
-    #Independent command that works like a command with a completion condition.
-
 
 # Brain should be defined by default
 brain = Brain()
@@ -396,9 +361,9 @@ def Autodrive():
             moveInches(10, 80)
             climbRamp() #Climb the ramp and then stop
             wait(1000) # wait 1 second. 
-            imuTurnFieldRelative(90)
+            imuTurnFieldRelative(90, 0)
             moveInches(15, 80)
-            imuTurnFieldRelative(0)
+            imuTurnFieldRelative(0, 0)
             moveInches(2, 40)
 
             print("Ready to spot fruits")
