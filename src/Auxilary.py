@@ -34,7 +34,7 @@ class PIDController:
         I_out = self.Ki * self.integral
         
         # Derivative term
-        derivative = (error - self.previous_error) / dt
+        derivative = (error - self.previous_error) / dt #Delta-Error / dt (given)vc fvvfcvcf
         D_out = self.Kd * derivative
         
         # Compute total output
