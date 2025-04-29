@@ -132,20 +132,28 @@ def moveInches(n_inches, speed_rpm):
     right_motor.spin_for(FORWARD, degreesToRotate, DEGREES, speed_rpm, RPM, True)
 
 def climbRamp(): 
-        kP = 1/25
-        print(brain_inertial.orientation(OrientationType.PITCH))
-        while True: 
-            #  print(brain_inertial.orientation(OrientationType.PITCH))
-            if Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1):
-                stopMotors()
-                print("reached top")
-                break
-            else: 
-                yawError = brain_inertial.heading() - 0
-                print(yawError)
-                #Check inversions, it all hinges on whether or not the gyroscope is Clockwise positive or CCW positive. 
-                left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
-                right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
+    kP = 1/25
+    print(brain_inertial.orientation(OrientationType.PITCH))
+    yawError = brain_inertial.heading() - 0
+    left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
+    right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
+    wait(2000)
+
+    while not(Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1)): 
+        #  print(brain_inertial.orientation(OrientationType.PITCH))
+        if Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1):
+            stopMotors()
+            print("reached top")
+            break
+        else: 
+            yawError = brain_inertial.heading() - 0
+            print(yawError)
+            #Check inversions, it all hinges on whether or not the gyroscope is Clockwise positive or CCW positive. 
+            left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
+            right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
+
+    stopMotors()
+    print("reached top")
 
 
 # def movePercent(n_percent, speed_rpm): 
@@ -246,9 +254,10 @@ def closeClaw():
             print("furnished")
             notFinished = False
             continue
-
     return
+
 def openClaw():
+    arm_motor.spin_to_position(0, DEGREES, 25, RPM, False)
     return 
  
 def followObj():
@@ -380,15 +389,20 @@ def approachFruit():
     finished = False
     kPHorizontal = 0.2 # 1/5th of the actual error to be accomodated at a time.
     # color = colorStack.get()
-    color= 0
-    while not finished: 
-        objects = ai_vision_12.take_snapshot(color)
-        if(objects):
-             height = ai_vision_12.largest_object().angle
-             horizontalError = (160 - ai_vision_12.largest_object.centerX)/160
+    color = 0
+    while not finished:
+        wait(10)
+        objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
+        height = ai_vision_12.largest_object().height
+        print(height)
+        if(objects and height < 140):
+             angle = ai_vision_12.largest_object().angle
+            #  print(height)
+             horizontalError = (160 - ai_vision_12.largest_object().centerX)/160
              moveRPM(40, horizontalError * kPHorizontal)
-
-             
+        else:
+            stopMotors()
+            finished = True
 
 
             #  print(height)
@@ -458,14 +472,54 @@ def findTorqueToMovement(Motor1):
 
 ################################################################################
 #Function calls begin here
-# brain_inertial.reset_rotation()
-# brain_inertial.reset_heading()
+brain_inertial.reset_rotation()
+brain_inertial.reset_heading()
 brain_inertial.calibrate()
 right_lift_motor.reset_position()
 arm_motor.reset_position()
 
 wait(2500)
 print("calibration finished")
+
+# Climb Ramp
+#   Once level, we are at top of ramp
+# climbRamp()
+
+# Align to Green Column
+# imuturn(-90)
+# moveInches(10, 25)
+# imuturn(90)
+
+# Find Green
+#   Grab
+#   Go to basket
+#   Let go
+#   Repeat once
+# approachFruit()
+lift(8)
+wait(2000)
+lift(1)
+# closeClaw()
+# imuturn(180)
+# moveInches(2, 25)
+# lift(-6)
+# openClaw()
+
+# Align to Yellow Column
+# Find Yellow
+#   Grab
+#   Go to basket
+#   Let go
+#   Repeat once
+
+# Align to Orange Column
+# Find Orange
+#   Grab
+#   Go to basket
+#   Let go
+#   Repeat until button press
+
+
 
 # while True : 
 #     DetectObject()
