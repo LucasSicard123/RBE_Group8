@@ -389,20 +389,21 @@ def approachFruit(color: Colordesc):
     while not finished:
         wait(10)
         objects = ai_vision_12.take_snapshot(color)
-        wait(10)
-        height = ai_vision_12.largest_object().height
-        if (objects and height < 130):
-            horizontalError = (180 - ai_vision_12.largest_object().centerX) / 180
-            moveRPM(40, horizontalError * kPHorizontal)
+        wait(100)
+        if (objects):
             height = ai_vision_12.largest_object().height
-            verticalError = (180 - ai_vision_12.largest_object().centerY) / 180
-            print("Vert Error: ", verticalError)
-            lift(currHeight + verticalError * 1.8) 
-            currHeight = currHeight + verticalError * 1.8
-            print("Current Height: ", currHeight)
-        else:
-            stopMotors()
-            finished = True
+            if (height < 130):
+                horizontalError = (180 - ai_vision_12.largest_object().centerX) / 180
+                moveRPM(40, horizontalError * kPHorizontal)
+                height = ai_vision_12.largest_object().height
+                verticalError = (180 - ai_vision_12.largest_object().centerY) / 180
+                print("Vert Error: ", verticalError)
+                lift(currHeight + verticalError * 1.8) 
+                currHeight = currHeight + verticalError * 1.8
+                print("Current Height: ", currHeight)
+            else:
+                stopMotors()
+                finished = True
     lift(currHeight+1)
 
 def Autodrive():
@@ -490,9 +491,9 @@ print("calibration finished")
 #   Go to basket
 #   Let go
 #   Repeat once
-# approachFruit(ai_vision_12__Green)
+approachFruit(ai_vision_12__Green)
 # closeClaw()
-lift(9)
+# lift(9)
 # imuturn(180)
 # moveInches(2, 25)
 # openClaw()
