@@ -9,15 +9,10 @@
 
 # Library imports
 from vex import *
-# from drivetrainController import DrivetrainController
-# from Auxilary import Auxilary, PIDController
-# from Mechanisms import Lift
-# from Mechanisms import Arm
+import time
 
 import math 
-
-#TODO: Math seems find but might be wrong. tbd
-#Should work in theory, just not tested yet. 
+ 
 def moveRPM(n_RPM, n_percentDirection): 
     left_motor.spin(FORWARD, Auxilary.clamp(n_RPM - n_percentDirection * 2 * n_RPM, -100, 100), RPM)
     right_motor.spin(FORWARD, Auxilary.clamp(n_RPM + n_percentDirection * 2 * n_RPM, -100, 100), RPM)
@@ -26,18 +21,42 @@ def moveRPM(n_RPM, n_percentDirection):
 
 #Command based method, that runs through first before letting any other command or function get called. 
 def imuTurnFieldRelative(n_heading):
-    heading = brain_inertial.heading()
+    heading = brain_inertial.rotation()
     toTurn = True
-    tolerance = 3 #TODO: Change for later, after testing. 
+    # tolerance = 3 #TODO: Change for later, after testing. 
     while toTurn: 
-        heading = brain_inertial.heading()
-        if Auxilary.rangeCheck(heading, n_heading - 3, n_heading + 3): 
+        heading = brain_inertial.rotation()
+        if Auxilary.rangeCheck(heading, n_heading - 10, n_heading + 10): 
             stopMotors()
             toTurn = False #End function
         if heading < n_heading: 
-            moveRPM(35, 1)
+            left_motor.spin(FORWARD, -10, RPM)
+            right_motor.spin(FORWARD, 10, RPM)
         if heading > n_heading: 
-            moveRPM(35, -1)
+            left_motor.spin(FORWARD, 10, RPM)
+            right_motor.spin(FORWARD, -10, RPM)
+
+def straightDrivePeriodic(n_speedRPM, rotation): 
+    distance = 0
+    kP = 0.5
+    error = rotation - brain_inertial.rotation(RotationUnits.DEG)
+    if(brain_inertial.rotation(RotationUnits.DEG) > 180): 
+        error = rotation - (brain_inertial.rotation(RotationUnits.DEG) - 360)
+    # error = brain_inertial.rotation(RotationUnits.DEG) - rotation
+    left_motor.spin(FORWARD, n_speedRPM - (kP * error), DEGREES, RPM) 
+    right_motor.spin(FORWARD, n_speedRPM + (kP * error), DEGREES, RPM)
+
+def driveUntilWall(n_inches): 
+    notFinished = True
+    while notFinished:
+        distance = rangeFinderFront.distance(DistanceUnits.IN)
+        if(distance <= n_inches): 
+            notFinished = False
+            stopMotors()
+        else: 
+            straightDrivePeriodic(25, 0)
+
+    
 
 class Auxilary:
     def __init__(self):
@@ -87,12 +106,13 @@ controller = Controller(ControllerType.PRIMARY)
 
 wheelTrack = 11 #in inches
 wheelDiameter = 4 #in inches
-gearRatio = 5 #5 : 1 // 60 : 12
+gearRatio = 1 #5 : 1 // 60 : 12
 wheelCircumference = 3.14 * wheelDiameter
 degreesPerInch = 360.0 / wheelCircumference
-ai_vision_12__Green = Colordesc(1, 9, 129, 55, 15, 0.4)
-ai_vision_12__Orange = Colordesc(2, 244, 147, 92, 4, 0.2)
-ai_vision_12__Yellow = Colordesc(1, 243, 215, 102, 10, 0.2)
+# ai_vision_12__Green = Colordesc(1, 9, 129, 55, 15, 0.4)
+ai_vision_12__Green = Colordesc(1, 44, 152, 82, 15, 0.4)
+ai_vision_12__Orange = Colordesc(1, 239, 82, 76, 6, 0.2)
+ai_vision_12__Yellow = Colordesc(2, 202, 143, 82, 10, 0.2)
 
 runArm = False
 
@@ -108,14 +128,14 @@ right_lift_motor = Motor(Ports.PORT3, 18_1, False)
 
 arm_motor = Motor(Ports.PORT8, 18_1, False) # This might change to a servo later. 
 
-# rangeFinderFront = Sonar(brain.three_wire_port.g)
+rangeFinderFront = Sonar(brain.three_wire_port.g)
 # rangeFinderSide = Sonar(brain.three_wire_port.a)
 # left_line_sensor = Line(brain.three_wire_port.e)
 # right_line_sensor = Line(brain.three_wire_port.f)
 brain_inertial = Inertial(Ports.PORT21)
 # arm_motor = Motor(Ports.PORT20, 18_1, False)
 # _button = Bumper(brain.three_wire_port.c)
-ai_vision_12 = AiVision(Ports.PORT9, ai_vision_12__Green)
+ai_vision_12 = AiVision(Ports.PORT9, ai_vision_12__Green, ai_vision_12__Orange, ai_vision_12__Yellow)
 
 
 
@@ -134,7 +154,6 @@ def climbRamp():
     left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
     right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
     wait(2000)
-
     while not(Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1)): 
         #  print(brain_inertial.orientation(OrientationType.PITCH))
         if Auxilary.rangeCheck(brain_inertial.orientation(OrientationType.PITCH), -1, 1):
@@ -147,7 +166,6 @@ def climbRamp():
             #Check inversions, it all hinges on whether or not the gyroscope is Clockwise positive or CCW positive. 
             left_motor.spin(FORWARD, 25 - (yawError * kP), RPM)
             right_motor.spin(FORWARD, 25 + (yawError * kP), RPM)
-
     stopMotors()
     print("reached top")
 
@@ -184,13 +202,13 @@ def imuturn(n_degrees):
         elif brain_inertial.rotation() > n_degrees:
             # brain.screen.set_cursor(2,1)
             # brain.screen.print("turing left")
-            left_motor.spin(REVERSE, 35, PERCENT)
-            right_motor.spin(FORWARD, 35, PERCENT)
+            left_motor.spin(REVERSE, 15, PERCENT)
+            right_motor.spin(FORWARD, 15, PERCENT)
         elif brain_inertial.rotation() < n_degrees:
             # brain.screen.set_cursor(2,1)
             # brain.screen.print("turing right")
-            left_motor.spin(FORWARD, 35, PERCENT)
-            right_motor.spin(REVERSE, 35, PERCENT)
+            left_motor.spin(FORWARD, 15, PERCENT)
+            right_motor.spin(REVERSE, 15, PERCENT)
 
 def DetectObject():
     # takes a snapshot and searches for SIG_3_RED_BALL
@@ -200,7 +218,7 @@ def DetectObject():
     if (objects):
         print('x:', ai_vision_12.largest_object().centerX, ' y:',
         ai_vision_12.largest_object().centerY, ' width:',
-        ai_vision_12.largest_object().width)
+        ai_vision_12.largest_object().width, 'height: ', ai_vision_12.largest_object().height)
         print("Angle", ai_vision_12.largest_object().angle)
         brain.screen.print_at('x: ', ai_vision_12.largest_object().centerX, x = 50, y =40)
         brain.screen.print_at(' y:', ai_vision_12.largest_object().centerY, x = 150,y = 40)
@@ -216,22 +234,6 @@ def movePercent(n_percent, n_percentDirection):
     left_motor.spin(FORWARD, n_percent - (2 * n_percentDirection), RPM)
     right_motor.spin(FORWARD, n_percent + (2 * n_percentDirection), RPM)
     return
-
-def driveTeleOp(): 
-    toDrive = True
-    while toDrive: 
-        #Normalized values [-100,100]
-        drive_r = -float(controller.axis1.position()) #rotational 
-        drive_f = -float(controller.axis3.position()) #speed control
-        if Auxilary.rangeCheck(drive_r, -5.5, 5.5):
-            drive_r = 0
-        if Auxilary.rangeCheck(drive_f, -5.5, 5.5): 
-            drive_f = 0
-        movePercent(drive_f, drive_r)
-        # if controller.buttonA.pressing :
-        #     print("pressed")
-        #     stopMotors()
-        #     # toDrive = False
 
 def closeClaw():
     arm_motor.spin_to_position(-270, DEGREES, 25, RPM, False)
@@ -253,41 +255,22 @@ def closeClaw():
     return
 
 def openClaw():
-    arm_motor.spin_to_position(0, DEGREES, 25, RPM, False)
+    arm_motor.spin_to_position(100, DEGREES, 25, RPM, False)
+    notFinished = True
+    wait(100)
+    while notFinished: 
+        # if(Auxilary.rangeCheck(prevPosition - arm_motor.position(RotationUnits.DEG), -1, 1)): 
+        #     arm_motor.stop(BrakeType.BRAKE)
+        #     print("finished")
+        #     notFinished = False
+        #     continue
+        if(arm_motor.velocity(VelocityUnits.RPM) == 0):
+            wait(1000)
+            arm_motor.stop(BrakeType.HOLD)
+            print("furnished")
+            notFinished = False
+            continue
     return 
- 
-def followObj():
-    kP = 0.3
-    # print the coordinates of the center of the object
-    while True:
-        wait(10)
-        objects = ai_vision_12.take_snapshot(ai_vision_12__Green)
-        if (objects):
-            error = 160 - ai_vision_12.largest_object().centerX
-            width = ai_vision_12.largest_object().width
-            print(error)
-            if Auxilary.rangeCheck(error, -20, 20):
-                stopMotors()
-            elif error > 0 and (objects) == True:
-                left_motor.spin(REVERSE, 10, PERCENT)
-                right_motor.spin(FORWARD, 10, PERCENT)
-            elif error < 0 and (objects) == True:
-                left_motor.spin(REVERSE, 10, PERCENT)
-                right_motor.spin(FORWARD, 10, PERCENT)
-            if Auxilary.rangeCheck(width, 50, 20):
-                stopMotors()
-            elif width > 25 and (objects) == True:
-                    # brain.screen.set_cursor(2,1)
-                    # brain.screen.print("turing left")
-                left_motor.spin(REVERSE, 10, PERCENT)
-                right_motor.spin(REVERSE, 10, PERCENT)
-            elif width < 45 and (objects) == True:
-                    # brain.screen.set_cursor(2,1)
-                    # brain.screen.print("turing right")
-                # left_motor.spin(FORWARD, kP * error, PERCENT)
-                # right_motor.spin(REVERSE, kP * error, PERCENT)
-                left_motor.spin(FORWARD, 10, PERCENT)
-                right_motor.spin(FORWARD, 10, PERCENT)      
 
 def lift(height):
     pitchDiameter = 0.5 #In inches
@@ -296,6 +279,9 @@ def lift(height):
     kP = 10
     finished = False
     distance = 0
+    if(height > 14): 
+        print("Invalid target height")
+        return
     currHeight = math.sin(math.acos((9.5 - 0)/(9.5))) * 9.5 * 2
     # self.left_motor.reset_position() #Do this somewhere else, BEFORE all the lift(self, height) calls. 
     tolerance = 0.1 #In inches
@@ -307,27 +293,65 @@ def lift(height):
         return #Limit reached.
     while not finished: 
         distance = right_lift_motor.position(RotationUnits.DEG)/360 * (pitchCircumference)
+        if(distance < 0): 
+            distance = 0
         # print(right_lift_motor.position(RotationUnits.DEG))
         currHeight = math.sin(math.acos((9.5 - distance)/(9.5))) * 9.5 * 2
         # currHeight = height
-        error = height - currHeight #When positive, motors should move clockwise(forwards)[it is inverted for one of the two motors]
-        #Otherwise, the current height is greater than setpoint height, hence the error is negative, in this case the pinions should move backwards.
-        #TODO: Make sure this happens and resolve any inversion issues.
+        error = height - currHeight 
         PID.setpoint = height
-        # print("current height : " + str(currHeight))
-        # print("error : " + str(error))
+        pidOutput = PID.compute(currHeight, 0.01) #Vex motors calculate every 10ms
+        # print(pidOutput)
+        if Auxilary.rangeCheck(currHeight, height - tolerance, height + tolerance): 
+            right_lift_motor.stop(BrakeType.BRAKE)
+            print("Finished : " + str(currHeight))
+            # print(currHeight)
+            finished = True
+        else: 
+            a = 1
+            # right_lift_motor.spin(FORWARD, kP * error, PERCENT)
+            right_lift_motor.spin(FORWARD, pidOutput, PERCENT)
+            # self.right_motor.spin(FORWARD, pidOutput, PERCENT)
 
+def liftInches(heightToAdd):
+    pitchDiameter = 0.5 #In inches
+    pitchCircumference = pitchDiameter * math.pi
+    PID = PIDController(8,0.01,0.001,0)
+    kP = 10
+    finished = False
+    distance = 0
+    distance = right_lift_motor.position(RotationUnits.DEG)/360 * (pitchCircumference)
+    if(distance < 0): 
+        distance = 0
+    currHeight = math.sin(math.acos((9.5 - distance)/(9.5))) * 9.5 * 2
+    height = currHeight + heightToAdd
+    print(height)
+    # self.left_motor.reset_position() #Do this somewhere else, BEFORE all the lift(self, height) calls. 
+    tolerance = 0.1 #In inches
+    # print(currHeight)
+    if(right_lift_motor.position(RotationUnits.REV) >= 2.47): 
+        right_lift_motor.stop(BrakeType.BRAKE)
+        print("Scissor limit reached")
+
+        return #Limit reached.
+    while not finished: 
+        distance = right_lift_motor.position(RotationUnits.DEG)/360 * (pitchCircumference) + 0.01
+        if(distance < 0): 
+            distance = 0
+        currHeight = math.sin(math.acos((9.5 - distance)/(9.5))) * 9.5 * 2
+        error = height - currHeight
+        PID.setpoint = height
         pidOutput = PID.compute(currHeight, 0.01) #Vex motors calculate every 10ms, this is simply for 
         # lasttime = time.time()
         # print(pidOutput)
-        if Auxilary.rangeCheck(currHeight, height - tolerance, height + tolerance): 
+        if Auxilary.rangeCheck(error, -tolerance, tolerance): 
             right_lift_motor.stop(BrakeType.BRAKE)
             print("Finished" + str(currHeight))
             # print(currHeight)
             finished = True
         else: 
             a = 1
-            # right_lift_motor.spin(FORWARD, kP * error, PERCENT)
+            # right_lift_motor.spin(FORWARD, -kP * error, PERCENT)
             right_lift_motor.spin(FORWARD, pidOutput, PERCENT)
             # self.right_motor.spin(FORWARD, pidOutput, PERCENT)
 
@@ -347,15 +371,8 @@ def liftPeriodic():
             print("Scissor limit reached")
 
             return #Limit reached. 
-        # distance = right_lift_motor.position(RotationUnits.DEG)/360 * (pitchCircumference)
-        # currHeight = math.sin(math.acos((9.5 - distance)/(9.5))) * 9.5 * 2
-        error =  ai_vision_12.largest_object().centerY - 180 #When positive, motors should move clockwise(forwards)[it is inverted for one of the two motors]
-                #Otherwise, the current height is greater than setpoint height, hence the error is negative, in this case the pinions should move backwards.
-                #TODO: Make sure this happens and resolve any inversion issues.
+        error =  ai_vision_12.largest_object().centerY - 120 
         PID.setpoint = 0
-                # print("current height : " + str(currHeight))
-                # print("error : " + str(error))
-
         # pidOutput = PID.compute(currHeight, 0.01) #Vex motors calculate every 10ms, this is simply for 
                 # lasttime = time.time()
                 # print(pidOutput)
@@ -409,40 +426,120 @@ def approachFruit(color: Colordesc):
 def Autodrive():
         Notfinished = True
         innerLoop = True
+        i = 2
         while Notfinished:
             # moveInches(10, 80)
             # climbRamp() #Climb the ramp and then stop
             # wait(1000) # wait 1 second. 
-            # imuTurnFieldRelative(90, 0)
+            # imuTurnFieldRelative(90)
+            imuturn(-90)
             # moveInches(15, 80)
-            # imuTurnFieldRelative(0, 0)
+            imuturn(90)
             # moveInches(2, 40)
-            while not(fruitReached(ai_vision_12__Green)): 
+            currentColor = ai_vision_12__Green
+            if(i == 1):
+                currentColor = ai_vision_12__Green
+            if(i == 2):
+                currentColor = ai_vision_12__Yellow
+            if(i == 3):
+                currentColor = ai_vision_12__Orange
+            
+            #Accumulate distance
+
+            left_motor.reset_position()
+            right_motor.reset_position()
+
+            
+            findfruit(currentColor)
+            openClaw()
+            while not(fruitReached(currentColor)): 
                 # print("called")
-                drive(15, 0)
+                horizontalError = (180 - ai_vision_12.largest_object().centerX) / 180
+                moveRPM(10, horizontalError * 0.25)
                 liftPeriodic()
+                # print("")
+                # a = 1
                 # DetectObject()
                 # print(fruitReached(ai_vision_12__Green))
-            print("Ready to spot fruits")
-            drive(0, 0)
+            DetectObject()
+            moveInches(1, 15)
+            drive(0,0)
+            liftInches(1)
+            print("Ready to drop fruits")
             right_lift_motor.stop(BrakeType.HOLD)
             closeClaw()
+            lift(2)
+
+            # moveInches(10, 20)
 
 
+            left_motor.spin_to_position(0, TURNS, False)
+            right_motor.spin_to_position(0, TURNS, True)
 
-            Notfinished = False
+            #Should be back to the point before the detection routine + grabbing routine. 
+
+            #Return to base now
+            if(i == 1):
+                
+                imuturn(180)
+            if(i == 2):
+                imuturn(180)
+            if(i == 3):
+                imuturn(180)
+
+            openClaw()
+
+            print("Done")
+            wait(3000)
+
+
+            
+            if(i == 4): 
+                Notfinished = False
+            i += 1
         return
 
-def fruitReached(color):
+def fruitReached(color:Colordesc):
     objects = ai_vision_12.take_snapshot(color)
     # print the coordinates of the center of the object
     if (objects):
-        if(ai_vision_12.largest_object().width >= 220) and (Auxilary.rangeCheck(ai_vision_12.largest_object().centerY, 180-20, 180+20)):
+        if(ai_vision_12.largest_object().height >= 230) and (Auxilary.rangeCheck(ai_vision_12.largest_object().centerX, 160 - 30, 160+30)):
             return True
         else:
             return False
     else:
         return False
+
+def findfruit(color):
+    objects = ai_vision_12.take_snapshot(color)
+    height = 5
+    notDone = True
+    while notDone: 
+        objects = ai_vision_12.take_snapshot(color)
+        if(not(objects)): 
+            height += 1
+            lift(height)
+            print("No objects, lifting...")
+        if(objects): 
+            print("Found objects, lifting to find closer")
+            if (ai_vision_12.largest_object().height > 65): 
+                print("Found fruit")
+                notDone = False #End function
+                break #End function 2(redundant but is better)
+            height += 1
+            lift(height)
+        #Reset height and move forward
+        if(height > 12): 
+            height = 5
+            moveInches(5, 15)
+    print("Finished finding fruit")
+    right_lift_motor.stop(BrakeType.BRAKE)
+
+
+
+
+     
+
             
 #Command based, needs completion before resuming with the stack 
 def findTorqueToMovement(Motor1):
@@ -461,6 +558,7 @@ def findTorqueToMovement(Motor1):
         # Motor1.spin(FORWARD, speed, RPM)
         # speed+=1
 
+# ai_vision_12.largest_object().
 
 
 ################################################################################
@@ -473,6 +571,8 @@ arm_motor.reset_position()
 
 wait(2500)
 print("calibration finished")
+# straightDrive(2000, 50)
+
 
 # Climb Ramp
 #   Once level, we are at top of ramp
@@ -491,7 +591,7 @@ print("calibration finished")
 #   Go to basket
 #   Let go
 #   Repeat once
-approachFruit(ai_vision_12__Green)
+# approachFruit(ai_vision_12__Green)
 # closeClaw()
 # lift(9)
 # imuturn(180)
@@ -533,11 +633,14 @@ approachFruit(ai_vision_12__Green)
 #     DetectObject()
 #     print(arm_motor.position(RotationUnits.DEG))
 # closeClaw()
-# findTorqueToMovement(right_lift_motor)
-# right_lift_motor.stop(BrakeType.COAST)
-# lift(12) #lift two inches
-# driveTeleOp()
-# Autodrive()
+# i =0 
+# while i < 5: 
+#     liftInches(0.5)
+#     i += 1
+
+Autodrive()
+# lift(12)
+# imuTurnFieldRelative(90)
 wait(2000)
 # climbRamp()
 print("Commands finished")
