@@ -452,35 +452,34 @@ def Autodrive():
         Notfinished = True
         innerLoop = True
         i = 1
-        # print("lift")
-        # wait(2000)
-        # moveInches(10, 40)
-        # climbRamp() #Climb the ramp and then stop
-        # moveInches(10, 40)
+        moveInches(10, 40) #Climb onto the start of the ramp. 
+        climbRamp() #Climb the ramp and then stop
+        moveInches(10, 40) #Move off the ramp
+        driveUntilWall(5, 0)
+        imuturn(-90)
+        moveInches(15, 80)
+        imuturn(-90)
         while Notfinished:
-            # wait(1000) # wait 1 second, make sure we are balanced 
-            # imuturn(-90)
-            # moveInches(15, 80)
-            # imuturn(90)
-            # moveInches(2, 40)
-            # print(brain_inertial.rotation())
+            print("Starting loop")
+            wait(1000) # wait 1 second, make sure we are balanced 
             # imuturn(20)
             # imuTurnFieldRelative(180)
+            print("Aligned with fruit tree line")
             wait(3000)
             # imuTurnFieldRelative(0)
             # print(brain_inertial.rotation())
             # driveUntilWall(6, 0)
-            print(brain_inertial.rotation())
+            print("Current rotation : ", brain_inertial.rotation())
 
             currentColor = ai_vision_12__Green
             if(i == 1):
-                print("Green")
+                print("On Green")
                 currentColor = ai_vision_12__Green
             if(i == 2):
-                print("Yellow")
+                print("On Yellow")
                 currentColor = ai_vision_12__Yellow
             if(i == 3):
-                print("Orange")
+                print("On Orange")
                 currentColor = ai_vision_12__Orange
             
             #Accumulate distance
@@ -489,53 +488,88 @@ def Autodrive():
             right_motor.reset_position()
 
             # moveInches(4, 15)
-
+            ####################################################
+            #Fruit grabbing sequence. 
             findfruit(currentColor)
             openClaw()
             while not(fruitReached(currentColor)): 
-                # print("called")
                 horizontalError = (160 - ai_vision_12.largest_object().centerX) / 160
                 moveRPM(10, horizontalError * 0.5)
                 liftPeriodic(currentColor)
-                # print("")
-                # a = 1
                 DetectObject()
-                # print(fruitReached(ai_vision_12__Green))
-            # DetectObject()
             liftInches(1)
             # moveInches(1.25, 15)
-            drive(0,0)
-            print("Ready to drop fruits")
+            stopMotors()
+            print("Grabbing fruit 1")
             right_lift_motor.stop(BrakeType.HOLD)
             closeClaw()
             lift(2)
+            #End of fruit grabbing sequence
+            #####################################################
 
             
-
+            #Considerable delay here because of the calculations.
             # # moveInches(10, 20)
             leftRev = left_motor.position(RotationUnits.DEG)
             rightRev = right_motor.position(RotationUnits.DEG)
-
             print(leftRev)
             print(rightRev)
-
             left_motor.spin_for(REVERSE, leftRev, DEGREES, 15, RPM,  False)
             right_motor.spin_for(REVERSE, rightRev, DEGREES, 15, RPM, True)
 
-            # driveUntilWall(4, 0)
+            #End of fruit grabbing sequence. 
+            
 
-            #Should be back to the point before the detection routine + grabbing routine. 
-            #Return to base now
-            # if(i == 1):
-            #     imuturn(180)
-            # if(i == 2):
-            #     imuturn(180)
-            # if(i == 3):
-            #     imuturn(180)
+            #First Deposit
+            driveUntilWall(5, 0)
+            openClaw()
+
+            #Second grab 
+            imuturn(180)
+            moveInchesDirection(5, 25, 180)
+
+            left_motor.reset_position()
+            right_motor.reset_position()
+
+            ####################################################
+            #Fruit grabbing sequence 2. 
+            findfruit(currentColor)
+            openClaw()
+            while not(fruitReached(currentColor)): 
+                horizontalError = (160 - ai_vision_12.largest_object().centerX) / 160
+                moveRPM(10, horizontalError * 0.5)
+                liftPeriodic(currentColor)
+                DetectObject()
+            liftInches(1)
+            # moveInches(1.25, 15)
+            stopMotors()
+            print("Grabbing Fruit 2")
+            right_lift_motor.stop(BrakeType.HOLD)
+            closeClaw()
+            lift(2)
+            #End of fruit grabbing sequence 2
+            #####################################################
+
+            leftRev = left_motor.position(RotationUnits.DEG)
+            rightRev = right_motor.position(RotationUnits.DEG)
+            print(leftRev)
+            print(rightRev)
+            left_motor.spin_for(REVERSE, leftRev, DEGREES, 15, RPM,  False)
+            right_motor.spin_for(REVERSE, rightRev, DEGREES, 15, RPM, True)
+
+            imuTurnFieldRelative(0)
+            driveUntilWall(5, 0)
 
             openClaw()
 
-            print("Done")
+            #Move onto next tree.  
+            
+            imuTurnFieldRelative(180)
+            driveUntilWall(6, 180)
+            imuturn(90)
+            moveInches(20, 25)
+
+            print("Done with cycle")
             wait(3000)
 
 
@@ -561,7 +595,7 @@ def fruitReached(color:Colordesc):
         except: 
             print("Problem occured, defaulting to largest object")
 
-        if(queryObj.height >= 190) or (queryObj.width >= 220):
+        if(queryObj.height >= 180) or (queryObj.width >= 220):
             return True
         else:
             return False
@@ -641,7 +675,7 @@ brain_inertial.calibrate()
 right_lift_motor.reset_position()
 arm_motor.reset_position()
 
-wait(2500)
+wait(3000)
 print("calibration finished")
 # straightDrive(2000, 50)
 
@@ -710,7 +744,8 @@ print("calibration finished")
 # while i < 5: 
 #     liftInches(0.5)
 #     i += 1
-
+print("Starting autodrive")
+wait(1000)
 Autodrive()
 # lift(12)
 # imuTurnFieldRelative(90)
